@@ -1,6 +1,7 @@
 {
   "mcpServers": {
     "burp": {
+      "type": "stdio",
       "command": "java",
       "args": [
         "-jar",

@@ -2,11 +2,14 @@
 
 Connect Burp Suite Professional to AI clients using the [Model Context Protocol (MCP)](https://modelcontextprotocol.io).
 
-## Prerequisites
+## Architecture
 
-1. **Burp Suite Professional** running with the MCP extension loaded
-2. **Java** installed (`java -version` works)
-3. The [PortSwigger MCP Server Extension](https://github.com/PortSwigger/mcp-server) built and loaded into Burp
+Two JARs from [PortSwigger/mcp-server](https://github.com/PortSwigger/mcp-server):
+
+| JAR | Purpose | Used by |
+|-----|---------|---------|
+| `build/libs/burp-mcp-all.jar` | Burp Suite Java extension | Load into Burp Suite |
+| `libs/mcp-proxy-all.jar` | Standalone stdio-to-SSE proxy | AI clients |
 
 ## Quick Setup
 
@@ -15,96 +18,114 @@ chmod +x mcp-setup/setup_mcp.sh
 ./mcp-setup/setup_mcp.sh
 ```
 
-The interactive script will:
-- Clone and build the MCP extension (optional)
-- Auto-detect your Java path
-- Let you pick which clients to configure
-- Write or merge the config for each client
-
 ## Manual Setup
 
-### Step 1: Build the MCP Extension
+### Step 1: Build
 
 ```bash
 git clone https://github.com/PortSwigger/mcp-server.git ~/burp-mcp-server
-cd ~/burp-mcp-server
-chmod +x gradlew
-./gradlew embedProxyJar
+cd ~/burp-mcp-server && chmod +x gradlew && ./gradlew embedProxyJar
 ```
 
-The proxy JAR will be at `~/burp-mcp-server/build/libs/mcp-proxy-all.jar`.
+### Step 2: Load Extension into Burp Suite
 
-### Step 2: Load the Extension in Burp Suite
+Extensions > Add > Java > `~/burp-mcp-server/build/libs/burp-mcp-all.jar` > Enable MCP server in MCP tab
 
-1. Open Burp Suite
-2. Go to **Extensions** tab
-3. Click **Add** -> Extension type: **Java** -> Select `burp-mcp-all.jar` from `build/libs/`
-4. The MCP tab appears - enable the server (default: `http://127.0.0.1:9876`)
+### Step 3: Configure Your AI Client
 
-### Step 3: Configure Your MCP Client
+## Claude Code (Official CLI)
 
-Copy the appropriate config file from this folder and place it in the correct location:
+Claude Code uses `claude mcp add` to register MCP servers. Three scopes available:
 
-| Client | Config Location | Config File |
-|--------|----------------|-------------|
+**User scope** (all projects):
+
+```bash
+claude mcp add --transport stdio --scope user burp -- java -jar ~/burp-mcp-server/libs/mcp-proxy-all.jar --sse-url http://127.0.0.1:9876
+```
+
+**Project scope** (shared via git, creates `.mcp.json`):
+
+```bash
+claude mcp add --transport stdio --scope project burp -- java -jar ~/burp-mcp-server/libs/mcp-proxy-all.jar --sse-url http://127.0.0.1:9876
+```
+
+**Local scope** (current project only, not shared):
+
+```bash
+claude mcp add --transport stdio --scope local burp -- java -jar ~/burp-mcp-server/libs/mcp-proxy-all.jar --sse-url http://127.0.0.1:9876
+```
+
+**Or via `.mcp.json`** (project root, for team sharing):
+
+```json
+{
+  "mcpServers": {
+    "burp": {
+      "type": "stdio",
+      "command": "java",
+      "args": ["-jar", "~/burp-mcp-server/libs/mcp-proxy-all.jar", "--sse-url", "http://127.0.0.1:9876"]
+    }
+  }
+}
+```
+
+Config file locations:
+
+| Scope | Config Location |
+|-------|----------------|
+| User | `~/.claude.json` (MCP servers section) |
+| Project | `.mcp.json` in project root |
+| Local | `~/.claude.json` (per-project entry) |
+
+Verify: `claude mcp list`
+
+Docs: https://code.claude.com/docs/en/mcp
+
+## Factory Droid
+
+Droid uses `~/.factory/mcp.json` for global config:
+
+```bash
+droid mcp add burp --type stdio -- /path/to/java -jar ~/burp-mcp-server/libs/mcp-proxy-all.jar --sse-url http://127.0.0.1:9876
+```
+
+Or manually edit `~/.factory/mcp.json`:
+
+```json
+{
+  "burp": {
+    "type": "stdio",
+    "command": "/path/to/java",
+    "args": ["-jar", "/path/to/burp-mcp-server/libs/mcp-proxy-all.jar", "--sse-url", "http://127.0.0.1:9876"]
+  }
+}
+```
+
+Droid auto-reloads on config changes.
+
+Docs: https://docs.factory.ai/cli/configuration/mcp
+
+## All Other Clients
+
+| Client | Config Location | Template File |
+|--------|----------------|---------------|
 | **Claude Desktop** (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` | `claude_desktop_config.json` |
 | **Claude Desktop** (Linux) | `~/.config/Claude/claude_desktop_config.json` | `claude_desktop_config.json` |
-| **Claude Code / Droid** | Run: `droid mcp add burp -- java -jar /path/to/mcp-proxy-all.jar --sse-url http://127.0.0.1:9876` | CLI command |
 | **Cursor** (global) | `~/.cursor/mcp.json` | `cursor_mcp.json` |
 | **Cursor** (per-project) | `.cursor/mcp.json` | `cursor_mcp.json` |
 | **Windsurf** | `~/.codeium/windsurf/mcp_config.json` | `windsurf_mcp_config.json` |
-| **Cline** (VS Code) | VS Code `settings.json` under `cline.mcpServers` | See snippet below |
+| **Cline** (VS Code) | VS Code `settings.json` under `cline.mcpServers` | `cline_vscode_settings.json` |
 | **Continue** | `~/.continue/config.json` | `continue_config.json` |
-| **Zed** | `~/.config/zed/settings.json` under `mcp_servers` | See snippet below |
-| **Any SSE client** | Use URL: `http://127.0.0.1:9876` or `http://127.0.0.1:9876/sse` | N/A |
-
-**Important**: Replace `/path/to/mcp-proxy-all.jar` with the actual path (e.g., `~/burp-mcp-server/build/libs/mcp-proxy-all.jar`) and `java` with your full Java path if needed.
-
-### Cline (VS Code) Snippet
-
-Add to your VS Code `settings.json`:
-
-```json
-{
-  "cline.mcpServers": {
-    "burp": {
-      "command": "java",
-      "args": ["-jar", "/path/to/mcp-proxy-all.jar", "--sse-url", "http://127.0.0.1:9876"]
-    }
-  }
-}
-```
-
-### Zed Snippet
-
-Add to `~/.config/zed/settings.json`:
-
-```json
-{
-  "mcp_servers": {
-    "burp": {
-      "command": "java",
-      "args": ["-jar", "/path/to/mcp-proxy-all.jar", "--sse-url", "http://127.0.0.1:9876"]
-    }
-  }
-}
-```
-
-## Claude Code / Factory Droid
-
-For Factory Droid, use the CLI:
-
-```bash
-# Stdio proxy method
-droid mcp add burp -- java -jar ~/burp-mcp-server/build/libs/mcp-proxy-all.jar --sse-url http://127.0.0.1:9876
-
-# Or SSE direct (if supported)
-droid mcp add burp http://127.0.0.1:9876 --type http
-```
+| **Zed** | `~/.config/zed/settings.json` under `mcp_servers` | `zed_settings.json` |
+| **Any SSE client** | URL: `http://127.0.0.1:9876/sse` | N/A |
 
 ## Troubleshooting
 
-- **"Connection refused"**: Make sure Burp Suite is running with the MCP extension loaded and the server is enabled
-- **MCP tools not showing**: Restart your AI client after adding the config
-- **Java not found**: Replace `java` with the full path (e.g., `/usr/bin/java` or `/usr/lib/jvm/java-21-openjdk/bin/java`)
-- **Port conflict**: Change the port in the Burp MCP extension settings and update all configs accordingly
+| Problem | Solution |
+|---------|----------|
+| "Connection refused" | Burp Suite must be running with MCP extension loaded and server enabled |
+| "disconnected" | Ensure you use `libs/mcp-proxy-all.jar`, NOT `build/libs/burp-mcp-all.jar` |
+| "Could not find main class" | Wrong JAR -- `libs/mcp-proxy-all.jar` is for clients, `build/libs/burp-mcp-all.jar` is for Burp only |
+| Tools not showing | Restart your AI client (Droid auto-reloads) |
+| Java not found | Use full path: `which java` and replace `java` with the output |
+| Port conflict | Change port in Burp MCP tab and update all configs |

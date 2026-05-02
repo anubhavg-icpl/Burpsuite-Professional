@@ -242,11 +242,29 @@ Extensions > Add > Java > Select `build/libs/burp-mcp-all.jar` > Enable the MCP 
 
 ### 3. Configure Your Client
 
+**Claude Code** (official CLI):
+```bash
+# User scope (all projects)
+claude mcp add --transport stdio --scope user burp -- java -jar ~/burp-mcp-server/libs/mcp-proxy-all.jar --sse-url http://127.0.0.1:9876
+
+# Project scope (creates .mcp.json, shared via git)
+claude mcp add --transport stdio --scope project burp -- java -jar ~/burp-mcp-server/libs/mcp-proxy-all.jar --sse-url http://127.0.0.1:9876
+
+# Verify
+claude mcp list
+```
+
+**Factory Droid**:
+```bash
+droid mcp add burp --type stdio -- java -jar ~/burp-mcp-server/libs/mcp-proxy-all.jar --sse-url http://127.0.0.1:9876
+```
+
 | Client | Config Location |
 |--------|----------------|
+| **Claude Code** | `claude mcp add` (user: `~/.claude.json`, project: `.mcp.json`) |
+| **Factory Droid** | `~/.factory/mcp.json` |
 | **Claude Desktop** (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` |
 | **Claude Desktop** (Linux) | `~/.config/Claude/claude_desktop_config.json` |
-| **Claude Code / Droid** | `droid mcp add burp -- java -jar ~/burp-mcp-server/build/libs/mcp-proxy-all.jar --sse-url http://127.0.0.1:9876` |
 | **Cursor** | `~/.cursor/mcp.json` |
 | **Windsurf** | `~/.codeium/windsurf/mcp_config.json` |
 | **Cline** (VS Code) | VS Code `settings.json` under `cline.mcpServers` |
