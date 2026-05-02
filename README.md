@@ -61,6 +61,36 @@ right click the desktop -> create a launcher name it Burpsuite Professional, add
 
 ---------
 
+#  $${\color{magenta}Arch-Linux-Installation}$$
+
+> Supports Arch Linux, EndeavourOS, Manjaro, Garuda, and other pacman-based distributions.
+
+## Install
+```sh
+wget -qO- https://raw.githubusercontent.com/xiv3r/Burpsuite-Professional/main/install_arch.sh | sudo bash
+```
+## Run
+```sh
+burpsuitepro
+```
+
+## Update
+> Re-run the install script — it will automatically update the existing installation.
+```sh
+wget -qO- https://raw.githubusercontent.com/xiv3r/Burpsuite-Professional/main/install_arch.sh | sudo bash
+```
+
+## Notes
+- Installs to `/opt/Burpsuite-Professional`
+- Uses `jre-openjdk` from official Arch repositories
+- Creates a desktop entry for application menu integration
+- If you have multiple Java versions, set the default with: `sudo archlinux-java set java-21-openjdk`
+
+<br>
+<br>
+
+---------
+
 #  $${\color{magenta}NixOS-Installation}$$
 
 ## Add this repo's flake to your flake inputs
