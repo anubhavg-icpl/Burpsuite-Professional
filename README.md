@@ -209,6 +209,71 @@ sudo cp burp /usr/local/bin/burp
 ## Notes
 - **Running the Shortcut**: Run `burp` from the `Burpsuite-Professional` directory containing `loader.jar` and `burpsuite_pro_v2025.5.6.jar`. For global use, replace `$(pwd)` with absolute paths.
 
+<br>
+<br>
+
+---------
+
+# $${\color{magenta}MCP-Server-Setup}$$
+
+Connect Burp Suite to AI clients (Claude Desktop, Claude Code, Cursor, Windsurf, Cline, Continue, Zed) using the [Model Context Protocol](https://modelcontextprotocol.io).
+
+## Quick Setup
+
+```bash
+chmod +x mcp-setup/setup_mcp.sh
+./mcp-setup/setup_mcp.sh
+```
+
+The interactive script will clone/build the [PortSwigger MCP extension](https://github.com/PortSwigger/mcp-server) and configure your AI clients automatically.
+
+## Manual Setup
+
+### 1. Build the MCP Extension
+
+```bash
+git clone https://github.com/PortSwigger/mcp-server.git ~/burp-mcp-server
+cd ~/burp-mcp-server && chmod +x gradlew && ./gradlew embedProxyJar
+```
+
+### 2. Load into Burp Suite
+
+Extensions > Add > Java > Select `build/libs/burp-mcp-all.jar` > Enable the MCP server in the MCP tab
+
+### 3. Configure Your Client
+
+| Client | Config Location |
+|--------|----------------|
+| **Claude Desktop** (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| **Claude Desktop** (Linux) | `~/.config/Claude/claude_desktop_config.json` |
+| **Claude Code / Droid** | `droid mcp add burp -- java -jar ~/burp-mcp-server/build/libs/mcp-proxy-all.jar --sse-url http://127.0.0.1:9876` |
+| **Cursor** | `~/.cursor/mcp.json` |
+| **Windsurf** | `~/.codeium/windsurf/mcp_config.json` |
+| **Cline** (VS Code) | VS Code `settings.json` under `cline.mcpServers` |
+| **Continue** | `~/.continue/config.json` |
+| **Zed** | `~/.config/zed/settings.json` under `mcp_servers` |
+| **Any SSE client** | URL: `http://127.0.0.1:9876` |
+
+Example config (same format for Claude Desktop, Cursor, Windsurf, Continue):
+
+```json
+{
+  "mcpServers": {
+    "burp": {
+      "command": "java",
+      "args": ["-jar", "/path/to/mcp-proxy-all.jar", "--sse-url", "http://127.0.0.1:9876"]
+    }
+  }
+}
+```
+
+See [`mcp-setup/README.md`](mcp-setup/README.md) for full details and troubleshooting.
+
+<br>
+<br>
+
+---------
+
 ## Contributors 
 
 <a href="https://github.com/xiv3r/Burpsuite-Professional/graphs/contributors">
